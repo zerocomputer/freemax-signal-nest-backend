@@ -14,7 +14,7 @@ interface User {
     nickname: string;
 }
 
-@WebSocketGateway({ cors: true })
+@WebSocketGateway({ path: '/ws', cors: true })
 export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @WebSocketServer()
     server: Server;
