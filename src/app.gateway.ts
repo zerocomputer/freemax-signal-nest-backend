@@ -8,6 +8,7 @@ import {
     ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import crypto from 'crypto';
 
 interface User {
     id: string;
@@ -32,6 +33,22 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     // Храним комнаты: roomId -> Set<socketId>
     private rooms: Map<string, Set<string>> = new Map();
+
+    private readonly TURN_SECRET = 'YOUR_SUPER_SECRET_KEY_CHANGE_THIS';
+    private readonly TURN_TTL = 86400; // Время жизни кредов (секунды)
+
+    // 🔥 Генерация TURN кредов (HMAC)
+    private generateTurnCredentials() {
+        const timestamp = Math.floor(Date.now() / 1000) + this.TURN_TTL;
+        const username = `${timestamp}:user_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Генерируем пароль через HMAC-SHA1
+        const hmac = crypto.createHmac('sha1', this.TURN_SECRET);
+        hmac.update(username);
+        const password = hmac.digest('base64');
+
+        return { username, password };
+    }
 
     handleConnection(client: Socket) {
         console.log(`Client connected: ${client.id}`);
@@ -103,7 +120,15 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
             .map((id) => this.users.get(id))
             .filter((u): u is User => !!u);
 
-        client.emit('users-list', existingUsers);
+        // 🔥 ГЕНЕРИРУЕМ УНИКАЛЬНЫЕ TURN КРЕДЫ
+        const turnCreds = this.generateTurnCredentials();
+        console.log(`Generated TURN creds for ${client.id}: ${turnCreds.username}`);
+
+        // Отправляем список пользователей + TURN креды
+        client.emit('users-list', {
+            users: existingUsers,
+            turnConfig: turnCreds // 🔥 Передаем конфиг на клиент
+        });
 
         // Сообщаем всем остальным В ЭТОЙ КОМНАТЕ о новом пользователе
         client.to(roomId).emit('user-joined', user);
