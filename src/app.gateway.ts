@@ -9,6 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import crypto from 'crypto';
+import { ConfigService } from '@nestjs/config';
 
 interface User {
     id: string;
@@ -28,13 +29,16 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @WebSocketServer()
     server: Server;
 
+    constructor(
+        private readonly configService: ConfigService,
+        private readonly TURN_SECRET = this.configService.getOrThrow('TURN_SECRET'),
+    ) { }
+
     // Храним активных пользователей: socketId -> User
     private users: Map<string, User> = new Map();
 
     // Храним комнаты: roomId -> Set<socketId>
     private rooms: Map<string, Set<string>> = new Map();
-
-    private readonly TURN_SECRET = 'YOUR_SUPER_SECRET_KEY_CHANGE_THIS';
     private readonly TURN_TTL = 86400; // Время жизни кредов (секунды)
 
     // 🔥 Генерация TURN кредов (HMAC)
