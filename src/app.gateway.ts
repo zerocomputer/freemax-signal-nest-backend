@@ -31,14 +31,17 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     constructor(
         private readonly configService: ConfigService,
-        private readonly TURN_SECRET = this.configService.getOrThrow('TURN_SECRET'),
-    ) { }
+    ) {
+        this.TURN_SECRET = this.configService.getOrThrow('TURN_SECRET');
+    }
 
     // Храним активных пользователей: socketId -> User
     private users: Map<string, User> = new Map();
 
     // Храним комнаты: roomId -> Set<socketId>
     private rooms: Map<string, Set<string>> = new Map();
+
+    private TURN_SECRET = '';
     private readonly TURN_TTL = 86400; // Время жизни кредов (секунды)
 
     // 🔥 Генерация TURN кредов (HMAC)
