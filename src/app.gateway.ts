@@ -42,7 +42,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private rooms: Map<string, Set<string>> = new Map();
 
     private TURN_SECRET = '';
-    private readonly TURN_TTL = 86400; // Время жизни кредов (секунды)
+    private readonly TURN_TTL = 3600; // Время жизни кредов (секунды)
 
     // 🔥 Генерация TURN кредов (HMAC)
     private generateTurnCredentials() {
